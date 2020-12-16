@@ -1,0 +1,12 @@
+.vscode
+*log*
+*out*
+__pycache__/
+
+.build/
+build/
+dist/
+.cache
+
+.env
+.venv
