@@ -77,7 +77,6 @@ elif opt.dataset == 'lsun':
     nc=3
     
 class Generator(nn.Module):
-    """Some Information about Generator"""
     def __init__(self):
         super(Generator, self).__init__()
         
@@ -104,8 +103,8 @@ class Generator(nn.Module):
             # state size : (batch_size, nc, 64, 64)
         )
 
-    def forward(self, x):
-        return self.net(x)
+    def forward(self, z):
+        return self.net(z)
     
 class Discriminatar(nn.Module):
     def __init__(self):
