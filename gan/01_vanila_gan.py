@@ -41,8 +41,8 @@ class Generator(nn.Module):
             nn.Tanh() # Training failed when using the 'sigmoid'
         )
     
-    def forward(self, x):
-        return self.net(x)
+    def forward(self, z):
+        return self.net(z)
     
 class Discriminatar(nn.Module):
     def __init__(self):
@@ -78,17 +78,18 @@ if not os.path.exists(opt.output_dir):
 for epoch in range(200):
     for idx, data in tqdm(enumerate(dataloader), total=len(dataloader), desc='epoch #{:>3d}'.format(epoch), leave=False):
         ##############################################################################
+        # train discriminatar
         # real data
         batch_size = data[0].size(0)
-        real_labels = torch.ones(batch_size, 1).to(device)
-        fake_labels = torch.zeros(batch_size, 1).to(device)
+        real = torch.ones(batch_size, 1).to(device)
+        fake = torch.zeros(batch_size, 1).to(device)
         
         real_data = data[0].to(device)
         
         discriminatar.zero_grad()
         
         output = discriminatar(real_data.flatten(1))
-        d_real_loss = criterion(output, real_labels)
+        d_real_loss = criterion(output, real)
         d_real_loss.backward()
         
         # fake data
@@ -96,7 +97,7 @@ for epoch in range(200):
         fake_data = generator(noise)
         
         output = discriminatar(fake_data.detach())
-        d_fake_loss = criterion(output, fake_labels)
+        d_fake_loss = criterion(output, fake)
         d_fake_loss.backward()
         
         optimizer_d.step()
@@ -104,7 +105,7 @@ for epoch in range(200):
         ##############################################################################
         generator.zero_grad()
         output = discriminatar(fake_data)
-        g_loss = criterion(output, real_labels)
+        g_loss = criterion(output, real)
         g_loss.backward()
         optimizer_g.step()
         

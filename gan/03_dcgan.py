@@ -155,15 +155,15 @@ for epoch in range(200):
         ##############################################################################
         # real data
         batch_size = data[0].size(0)
-        real_labels = torch.ones(batch_size).to(device)
-        fake_labels = torch.zeros(batch_size).to(device)
+        real = torch.ones(batch_size).to(device)
+        fake = torch.zeros(batch_size).to(device)
         
         real_data = data[0].to(device)
         
         discriminatar.zero_grad()
         
         output = discriminatar(real_data)
-        d_real_loss = criterion(output, real_labels)
+        d_real_loss = criterion(output, real)
         d_real_loss.backward()
         
         # fake data
@@ -171,7 +171,7 @@ for epoch in range(200):
         fake_data = generator(noise)
         
         output = discriminatar(fake_data.detach())
-        d_fake_loss = criterion(output, fake_labels)
+        d_fake_loss = criterion(output, fake)
         d_fake_loss.backward()
         
         optimizer_d.step()
@@ -179,7 +179,7 @@ for epoch in range(200):
         ##############################################################################
         generator.zero_grad()
         output = discriminatar(fake_data)
-        g_loss = criterion(output, real_labels)
+        g_loss = criterion(output, real)
         g_loss.backward()
         optimizer_g.step()
         
