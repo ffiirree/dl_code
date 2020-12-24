@@ -8,7 +8,12 @@
 
 ## Deep Generation Models
 
-### GAN
+### Auto-Regressive Models
+
+- [ ] PixelRNN
+- [ ] PixelCNN
+
+### GANs
 
 - [x] GAN
 - [x] Conditional GAN

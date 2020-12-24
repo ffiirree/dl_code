@@ -83,11 +83,6 @@ optimizer = optim.Adam(vae.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
 # Reconstruction + KL divergence losses summed over all elements and batch
 def criterion(recon_x, x, mu, logvar):
     BCE = F.binary_cross_entropy(recon_x, x, reduction='sum')
-
-    # see Appendix B from VAE paper:
-    # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
-    # https://arxiv.org/abs/1312.6114
-    # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
     return BCE + KLD
@@ -112,4 +107,10 @@ for epoch in range(200):
         optimizer.step()
 
         if idx % 100 == 0:
-            torchvision.utils.save_image(output.detach(), './{}/fake.png'.format(opt.output_dir, idx))
+            torchvision.utils.save_image(output.detach(), './{}/reconstruction.png'.format(opt.output_dir))
+            
+            # sample
+            with torch.no_grad():
+                noise = torch.randn(64, opt.nz).to(device)
+                sample = vae.decoder(noise)
+                torchvision.utils.save_image(output.detach(), './{}/sample.png'.format(opt.output_dir))
