@@ -14,7 +14,7 @@ parser.add_argument('--batch-size', type=int, default=64)
 parser.add_argument('--nz', type=int, default=100, help='size of the latent z vector')
 parser.add_argument('--lr', type=float, default=0.0002, help='learning rate, default=0.0002')
 parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam, default=0.5')
-parser.add_argument('--output-dir', default='cgan_logs')
+parser.add_argument('--output-dir', default='logs/cgan')
 
 opt = parser.parse_args()
 print(opt)

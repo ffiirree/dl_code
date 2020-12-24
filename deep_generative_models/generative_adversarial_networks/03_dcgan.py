@@ -19,7 +19,7 @@ parser.add_argument('--ngf', type=int, default=64, help='size of the generator f
 parser.add_argument('--ndf', type=int, default=64, help='size of the discriminator filters')
 parser.add_argument('--lr', type=float, default=0.0002, help='learning rate, default=0.0002')
 parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam, default=0.5')
-parser.add_argument('--output-dir', default='dcgan_logs')
+parser.add_argument('--output-dir', default='logs/dcgan')
 parser.add_argument('--classes', default='bedroom', help='comma separated list of classes for the lsun data set')
 
 opt = parser.parse_args()

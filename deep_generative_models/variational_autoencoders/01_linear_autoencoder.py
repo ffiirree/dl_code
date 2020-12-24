@@ -13,7 +13,7 @@ parser.add_argument('--workers', type=int, default=4)
 parser.add_argument('--batch-size', type=int, default=64)
 parser.add_argument('--nz', type=int, default=10, help='size of the latent z vector')
 parser.add_argument('--lr', type=float, default=1e-3, help='learning rate, default=0.001')
-parser.add_argument('--output-dir', default='linear_ae_out')
+parser.add_argument('--output-dir', default='logs/linear_ae')
 
 opt = parser.parse_args()
 print(opt)
