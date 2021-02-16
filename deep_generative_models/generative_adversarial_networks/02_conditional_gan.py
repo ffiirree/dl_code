@@ -47,7 +47,10 @@ class Generator(nn.Module):
     
     def forward(self, z, labels):
         x = torch.cat((z, self.embeds(labels)), 1)
-        return self.net(x)
+        if x.is_cuda:
+            return nn.parallel.data_parallel(self.net, x, range(4))
+        else:
+            return self.net(x)
     
 class Discriminatar(nn.Module):
     def __init__(self):
@@ -66,7 +69,10 @@ class Discriminatar(nn.Module):
         )
         
     def forward(self, x, labels):
-        return self.net(torch.cat((x, self.embeds(labels)), 1))
+        if x.is_cuda:
+            return nn.parallel.data_parallel(self.net, torch.cat((x, self.embeds(labels)), 1), range(4))
+        else:
+            return self.net(torch.cat((x, self.embeds(labels)), 1))
         
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
