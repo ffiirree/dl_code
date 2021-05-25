@@ -1,12 +1,12 @@
+import argparse
 import numpy as np
 import torch
 import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
 import os
-from models import FCN32s
-from models import FCN16s
-from models import FCN8s
+from models import FCN8s, FCN16s, FCN32s
+from utils import make_logger
 
 class VOCDatasetTransforms(object):
     MEAN = [0.485, 0.456, 0.406]
@@ -34,18 +34,11 @@ class VOCDatasetTransforms(object):
 #     pass
 
 def train(model, device, train_loader, optimizer, criterion):
-    if torch.cuda.device_count() > 1:
-        print('{} GPUs'.format(torch.cuda.device_count()))
-        model = nn.DataParallel(model)
-        
-    model.to(device)
-    
-    if not os.path.exists('./fcn_out'):
-        os.makedirs('./fcn_out')
+
     for epoch in range(50):
 
         train_loss = 0
-        
+
         for batch_index, (image, target) in enumerate(train_loader):
 
             image, target = image.to(device), target.to(device)
@@ -60,28 +53,47 @@ def train(model, device, train_loader, optimizer, criterion):
             train_loss += loss.item()
 
             if batch_index % 20 == 0 and batch_index != 0:
-                print('epoch #{:>2} [{:>4}/{}]: {}'.format(epoch, batch_index, len(train_loader), train_loss / 20))
+                logger.info('epoch #{:>2} [{:>4}/{}]: {}'.format(epoch, batch_index, len(train_loader), train_loss / 20))
                 train_loss = 0
-                torchvision.utils.save_image(score.max(1)[1].cpu().float(), 'fcn_out/{}_p.png'.format(batch_index), nrow=4, normalize=True)
-                torchvision.utils.save_image(target.float(), 'fcn_out/{}_t.png'.format(batch_index), nrow=4, normalize=True)
+                torchvision.utils.save_image(score.max(1)[1].cpu().float(), f'{args.output_dir}/{batch_index}_p.png', nrow=4, normalize=True)
+                torchvision.utils.save_image(target.float(), f'{args.output_dir}/{batch_index}_t.png', nrow=4, normalize=True)
 
 
 if __name__ == '__main__':
-    model = FCN8s(num_classes=21)
-    
-    vgg16 = torchvision.models.vgg16_bn(pretrained=True)
-    pretrained_dict = vgg16.state_dict()
-    model_dict = model.state_dict()
-    pretrained_dict = {k : v for k, v in pretrained_dict.items() if k in model_dict}
-    model_dict.update(pretrained_dict)
-    model.load_state_dict(model_dict)
+    assert torch.cuda.is_available(), "CUDA IS NOT AVAILABLE!!"
+    device = torch.device('cuda')
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model',      type=str,   default='fcn8s')
+    parser.add_argument('--workers',    type=int,   default=16)
+    parser.add_argument('--batch-size', type=int,   default=1)
+    parser.add_argument('--output-dir', type=str,   default='logs')
+
+    args = parser.parse_args()
+
+    logger = make_logger(args.model, args.output_dir)
+    logger.info(args)
+
+    if args.model == 'fcn8s':
+        model = FCN8s(num_classes=21)
+    elif args.model == 'fcn16s':
+        model = FCN16s(num_classes=21)
+    else:
+        model = FCN32s(num_classes=21)
+
+    model = nn.DataParallel(model)
+    model.to(device)
+    logger.info(f'use gpus: {model.device_ids}')
 
     train_loader = torch.utils.data.DataLoader(
         torchvision.datasets.SBDataset(
             os.path.expanduser('~/data/datasets/VOC'), image_set='train_noval', mode='segmentation', download=False,
             transforms=VOCDatasetTransforms()
         ),
-        batch_size=1, shuffle=True
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.workers,
+        pin_memory=True
     )
 
     val_loader = torch.utils.data.DataLoader(
@@ -89,13 +101,14 @@ if __name__ == '__main__':
             os.path.expanduser('~/data/datasets/VOC'), year='2012', image_set='val', download=False,
             transforms=VOCDatasetTransforms()
         ),
-        batch_size=1, shuffle=False
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=args.workers,
+        pin_memory=True
     )
-
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     optimizer = torch.optim.SGD(model.parameters(), lr=1.0e-9, momentum=0.99, weight_decay=0.0005)
 
-    criterion = torch.nn.CrossEntropyLoss(reduction='sum')
+    criterion = torch.nn.CrossEntropyLoss()
 
     train(model, device, train_loader, optimizer, criterion)

@@ -102,7 +102,7 @@ for epoch in range(200):
         
         real_data, real_labels = images.to(device), labels.to(device)
         
-        discriminatar.zero_grad()
+        optimizer_d.zero_grad()
         
         output = discriminatar(real_data.flatten(1), real_labels)
         d_real_loss = criterion(output, real)
@@ -120,7 +120,7 @@ for epoch in range(200):
         optimizer_d.step()
         
         ##############################################################################
-        generator.zero_grad()
+        optimizer_g.zero_grad()
         output = discriminatar(fake_data, fake_labels)
         g_loss = criterion(output, real)
         g_loss.backward()
