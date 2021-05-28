@@ -1,5 +1,4 @@
 .vscode
-*log*
 *out*
 __pycache__/
 
@@ -10,5 +9,6 @@ dist/
 
 .env
 .venv
-
+logs/
+**.log
 learning.py
