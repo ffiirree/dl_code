@@ -1,5 +1,4 @@
 import torch
-import torchsummary
 import torch.nn as nn
 
 __all__ = ['AutoEncoder']
@@ -74,10 +73,3 @@ class AutoEncoder(nn.Module):
 
         return self.output(decode_conv4)
 
-if __name__ == "__main__":
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = AutoEncoder(3, 1, filters=[32, 64, 128, 256, 512])
-    if device == torch.device('cuda'):
-        model = nn.DataParallel(model, device_ids=[0,1,2,3])
-    model.to(device)
-    torchsummary.summary(model, (3, 512, 512))
