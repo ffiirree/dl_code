@@ -1,71 +1,57 @@
 import torch
+import torchsummary
 import torch.nn as nn
 
 __all__ = ['UNet']
 
 class DoubleConv2d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
-        super(DoubleConv2d, self).__init__()
+        super().__init__()
+
         self.layers = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
-            
             nn.Conv2d(out_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
         )
-
     def forward(self, x):
         return self.layers(x)
 
-
 class UNet(nn.Module):
-    def __init__(self, channels):
-        super(UNet, self).__init__()
-        
-        filters = [64, 128, 256, 512, 1024]
-        
-        # downsampling
-        # 576 x 576 @ 3
-        self.encode_conv1 = DoubleConv2d(channels, filters[0])
-        # 576 x 576 @ 64
+    def __init__(self, n_channels, n_classes, filters = [64, 128, 256, 512, 1024]):
+        super().__init__()
+
+        self.n_channels = n_channels
+        self.n_classes = n_classes
+
+        self.encode_conv1 = DoubleConv2d(n_channels, filters[0])
         self.down1 = nn.MaxPool2d(2)
-        # 288 x 288 @ 64
         self.encode_conv2 = DoubleConv2d(filters[0], filters[1])
-        # 288 x 288 @ 128
         self.down2 = nn.MaxPool2d(2)
-        # 144 x 144 @ 128
         self.encode_conv3 = DoubleConv2d(filters[1], filters[2])
-        # 144 x 144 @ 256
         self.down3 = nn.MaxPool2d(2)
-        # 72 x 72 @ 256
         self.encode_conv4 = DoubleConv2d(filters[2], filters[3])
-        # 72 x 72 @ 512
         self.down4 = nn.MaxPool2d(2)
-        # 36 x 36 @ 512
+
         self.u = DoubleConv2d(filters[3], filters[4])
-        # 36 x 36 @ 1024
+
         self.up1 = nn.ConvTranspose2d(filters[4], filters[3], 4, stride=2, padding=1)
-        # 72 x 72 @ 512 + encode_conv4
         self.decode_conv1 = DoubleConv2d(filters[4], filters[3])
-        # 72 x 72 @ 512
         self.up2 = nn.ConvTranspose2d(filters[3], filters[2], 4, stride=2, padding=1)
-        # 144 x 144 @ 256 + encode_conv3
         self.decode_conv2 = DoubleConv2d(filters[3], filters[2])
-        # 144 x 144 @ 256
         self.up3 = nn.ConvTranspose2d(filters[2], filters[1], 4, stride=2, padding=1)
-        # 288 x 288 @ 128 + encode_conv2 
         self.decode_conv3 = DoubleConv2d(filters[2], filters[1])
-        # 288 x 288 @ 128
         self.up4 = nn.ConvTranspose2d(filters[1], filters[0], 4, stride=2, padding=1)
-        # 576 x 576 @ 64 + encode_conv1
         self.decode_conv4 = DoubleConv2d(filters[1], filters[0])
-        # 576 x 576 @ 64
-        self.output = nn.Conv2d(filters[0], 1, kernel_size=3, padding=1)
-        # 576 x 576 @ 1
+
+        self.output = nn.Conv2d(filters[0], n_classes, kernel_size=3, padding=1)
 
     def forward(self, x):
+        assert x.size()[2] % 16 == 0, "The 2nd dimension must be a multiple of 16! but is {}.".format(x.size()[2])
+        assert x.size()[3] % 16 == 0, "The 3rd dimension must be a multiple of 16, but is {}.".format(x.size()[3])
+
         encode_conv1 = self.encode_conv1(x)
         down1 = self.down1(encode_conv1)
         encode_conv2 = self.encode_conv2(down1)
@@ -74,22 +60,24 @@ class UNet(nn.Module):
         down3 = self.down3(encode_conv3)
         encode_conv4 = self.encode_conv4(down3)
         down4 = self.down4(encode_conv4)
-        u = self.u(down4)
-        up1 = self.up1(u)
-        decode_conv1 = self.decode_conv1(torch.cat([up1, encode_conv4], 1))
-        up2 = self.up2(decode_conv1)
-        decode_conv2 = self.decode_conv2(torch.cat([up2, encode_conv3], 1))
-        up3 = self.up3(decode_conv2)
-        decode_conv3 = self.decode_conv3(torch.cat([up3, encode_conv2], 1))
-        up4 = self.up4(decode_conv3)
-        decode_conv4 = self.decode_conv4(torch.cat([up4, encode_conv1], 1))
-        out = self.output(decode_conv4)
-        return out
-        
 
-if __name__ == '__main__':
-    net = UNet(3)
-    x = torch.randn(1, 3, 576, 576)
-    print(net)
-    print('input  size: {}'.format([1, 3, 576, 576]))
-    print('output size: {}'.format(list(net(x).size())))
+        u = self.u(down4)
+
+        up1 = self.up1(u)
+        decode_conv1 = self.decode_conv1(torch.cat([encode_conv4, up1], 1))
+        up2 = self.up2(decode_conv1)
+        decode_conv2 = self.decode_conv2(torch.cat([encode_conv3, up2], 1))
+        up3 = self.up3(decode_conv2)
+        decode_conv3 = self.decode_conv3(torch.cat([encode_conv2, up3], 1))
+        up4 = self.up4(decode_conv3)
+        decode_conv4 = self.decode_conv4(torch.cat([encode_conv1, up4], 1))
+
+        return self.output(decode_conv4)
+
+if __name__ == "__main__":
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = UNet(3, 1, filters=[32, 64, 128, 256, 512])
+    if device == torch.device('cuda'):
+        model = nn.DataParallel(model, device_ids=[0,1,2,3])
+    model.to(device)
+    torchsummary.summary(model, (3, 512, 512))

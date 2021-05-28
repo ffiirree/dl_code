@@ -84,31 +84,36 @@ if __name__ == '__main__':
     model = nn.DataParallel(model)
     model.to(device)
     logger.info(f'use gpus: {model.device_ids}')
-
-    train_loader = torch.utils.data.DataLoader(
-        torchvision.datasets.SBDataset(
-            os.path.expanduser('~/data/datasets/VOC'), image_set='train_noval', mode='segmentation', download=False,
+    
+    train_dataset = torchvision.datasets.VOCSegmentation(
+            os.path.expanduser('~/data/datasets/VOC'), image_set='train', download=False,
             transforms=VOCDatasetTransforms()
-        ),
-        batch_size=args.batch_size,
-        shuffle=True,
-        num_workers=args.workers,
-        pin_memory=True
-    )
+        )
+    
+    print(len(train_dataset))
 
-    val_loader = torch.utils.data.DataLoader(
-        torchvision.datasets.VOCSegmentation(
-            os.path.expanduser('~/data/datasets/VOC'), year='2012', image_set='val', download=False,
-            transforms=VOCDatasetTransforms()
-        ),
-        batch_size=args.batch_size,
-        shuffle=False,
-        num_workers=args.workers,
-        pin_memory=True
-    )
 
-    optimizer = torch.optim.SGD(model.parameters(), lr=1.0e-9, momentum=0.99, weight_decay=0.0005)
+    # train_loader = torch.utils.data.DataLoader(
+    #     train_dataset,
+    #     batch_size=args.batch_size,
+    #     shuffle=True,
+    #     num_workers=args.workers,
+    #     pin_memory=True
+    # )
 
-    criterion = torch.nn.CrossEntropyLoss()
+    # val_loader = torch.utils.data.DataLoader(
+    #     torchvision.datasets.VOCSegmentation(
+    #         os.path.expanduser('~/data/datasets/VOC'), year='2012', image_set='val', download=False,
+    #         transforms=VOCDatasetTransforms()
+    #     ),
+    #     batch_size=args.batch_size,
+    #     shuffle=False,
+    #     num_workers=args.workers,
+    #     pin_memory=True
+    # )
 
-    train(model, device, train_loader, optimizer, criterion)
+    # optimizer = torch.optim.SGD(model.parameters(), lr=1.0e-9, momentum=0.99, weight_decay=0.0005)
+
+    # criterion = torch.nn.CrossEntropyLoss()
+
+    # train(model, device, train_loader, optimizer, criterion)
