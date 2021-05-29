@@ -6,10 +6,10 @@ from torch.nn.modules import adaptive
 __all__ = ['FCN8s']
 
 class FCN8s(nn.Module):
-    def __init__(self, num_classes):
+    def __init__(self, num_channels, num_classes):
         super(FCN8s, self).__init__()
 
-        self.conv1_1    = nn.Conv2d(3, 64, 3, padding=100)
+        self.conv1_1    = nn.Conv2d(num_channels, 64, 3, padding=100)
         self.bn1_1      = nn.BatchNorm2d(64)
         self.relu1_1    = nn.ReLU(inplace=True)
         self.conv1_2    = nn.Conv2d(64, 64, 3, padding=1)

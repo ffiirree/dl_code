@@ -51,14 +51,10 @@ def mean_fscore(pred: torch.Tensor, label: torch.Tensor, num_classes:int, ignore
     
 
 def intersect_and_union(pred:torch.Tensor, label:torch.Tensor, num_classes:int, ignore_index:int):
-    
     mask = (label != ignore_index)
-    
-    # print(f'mask {mask}')
+
     pred = pred[mask]
-    # print(f'pred {pred}')
     label = label[mask]
-    # print(label)
     
     intersect = pred[pred == label]
     n_intersect = torch.histc(intersect.float(), bins=(num_classes), min=0, max=num_classes-1)
@@ -68,4 +64,5 @@ def intersect_and_union(pred:torch.Tensor, label:torch.Tensor, num_classes:int, 
     n_union = n_pred + n_label - n_intersect
     
     return n_intersect, n_union, n_pred, n_label
+    
     
